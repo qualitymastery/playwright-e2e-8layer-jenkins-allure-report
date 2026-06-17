@@ -885,7 +885,7 @@ Finished: SUCCESS
 | Headless (default) | `npx playwright test` |
 | Headed (browser visible) | `npx playwright test --headed` |
 
-The current Jenkinsfile runs **headed** mode. To switch to headless, remove `--headed` from the pipeline script.
+The current Jenkinsfile runs in **headless** mode. To switch to headed mode, add `--headed` to the `npx playwright test` command in the pipeline script.
 
 ---
 
@@ -969,11 +969,11 @@ Error: browserType.launch: Executable doesn't exist at
 C:\WINDOWS\system32\config\systemprofile\AppData\Local\ms-playwright\...
 ```
 
-Fix: Set `PLAYWRIGHT_BROWSERS_PATH` in pipeline environment to user browser path:
+Fix: Set `PLAYWRIGHT_BROWSERS_PATH` to `0` in the pipeline environment to install browsers locally in the project:
 ```groovy
-environment {
-    PLAYWRIGHT_BROWSERS_PATH = 'C:/Users/Sanjay-PC/AppData/Local/ms-playwright'
-}
+    environment {
+        PLAYWRIGHT_BROWSERS_PATH = '0'
+    }
 ```
 
 ---
@@ -984,14 +984,7 @@ environment {
 'allure' is not recognized as an internal or external command
 ```
 
-Fix: Use full path in pipeline:
-```groovy
-environment {
-    ALLURE_CMD = 'C:/Users/Sanjay-PC/scoop/shims/allure.cmd'
-}
-// then in steps:
-bat '"%ALLURE_CMD%" generate allure-results --clean -o allure-report'
-```
+Fix: Ensure allure is correctly installed on the Jenkins server and added to the PATH, or use `npx allure-commandline` if installed locally via npm. If using the Jenkins Allure plugin, it handles the execution automatically.
 
 ---
 
