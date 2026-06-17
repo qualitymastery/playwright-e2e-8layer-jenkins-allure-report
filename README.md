@@ -718,43 +718,73 @@ Location: `PlaywrightE2E/Jenkinsfile`
 pipeline {
     agent any
 
+    tools {
+        nodejs 'NodeJS'
+    }
+
     environment {
-        PLAYWRIGHT_BROWSERS_PATH = 'C:/Users/Sanjay-PC/AppData/Local/ms-playwright'
         BASE_URL = 'https://www.saucedemo.com'
-        ALLURE_CMD = 'C:/Users/Sanjay-PC/scoop/shims/allure.cmd'
+        PLAYWRIGHT_BROWSERS_PATH = '0'
     }
 
     stages {
-        stage('Install Dependencies') {
+        stage('Checkout') {
             steps {
-                bat 'cd /d C:/Users/Sanjay-PC/MasterClass/ClaudeCodeForQA/PlaywrightE2E && npm ci'
+                git branch: 'main', url: 'https://github.com/qualitymastery/playwright-e2e-8layer-jenkins-allure-report.git'
             }
         }
 
-        stage('Run Playwright Tests') {
+        stage('Install Dependencies') {
             steps {
-                catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                    bat 'cd /d C:/Users/Sanjay-PC/MasterClass/ClaudeCodeForQA/PlaywrightE2E && npx playwright test --headed'
+                bat 'npm ci'
+            }
+        }
+
+        stage('Install Playwright Browsers') {
+            steps {
+                bat 'npx playwright install chromium --with-deps'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                bat 'npx playwright test'
+            }
+            post {
+                always {
+                    junit testResults: 'test-results/*.xml', allowEmptyResults: true
                 }
+            }
+        }
+
+        stage('Generate Allure Report') {
+            steps {
+                bat 'allure generate allure-results --clean -o allure-report'
             }
         }
     }
 
     post {
         always {
-            bat 'cd /d C:/Users/Sanjay-PC/MasterClass/ClaudeCodeForQA/PlaywrightE2E && "%ALLURE_CMD%" generate allure-results --clean -o allure-report'
-            publishHTML target: [
-                allowMissing: false,
-                alwaysLinkToLastBuild: true,
-                keepAll: true,
-                reportDir: 'C:/Users/Sanjay-PC/MasterClass/ClaudeCodeForQA/PlaywrightE2E/allure-report',
-                reportFiles: 'index.html',
-                reportName: 'Allure Report',
-                reportTitles: 'Allure Test Report'
-            ]
+            allure([
+                includeProperties: false,
+                jdk: '',
+                results: [[path: 'allure-results']],
+                reportBuildPolicy: 'ALWAYS',
+                report: 'allure-report'
+            ])
+
+            archiveArtifacts artifacts: 'playwright-report/**', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'test-results/**', allowEmptyArchive: true
         }
-        success { echo 'All tests passed!' }
-        failure { echo 'Tests failed - check Allure report.' }
+
+        success {
+            echo 'All tests passed!'
+        }
+
+        failure {
+            echo 'Tests failed — check Allure report for details.'
+        }
     }
 }
 ```
@@ -763,9 +793,8 @@ pipeline {
 
 | Variable | Value | Purpose |
 |---|---|---|
-| `PLAYWRIGHT_BROWSERS_PATH` | `C:/Users/Sanjay-PC/AppData/Local/ms-playwright` | Points Jenkins (SYSTEM user) to user-installed browsers |
+| `PLAYWRIGHT_BROWSERS_PATH` | `0` | Installs browsers locally in `node_modules` to avoid Jenkins permission issues |
 | `BASE_URL` | `https://www.saucedemo.com` | Application under test |
-| `ALLURE_CMD` | `C:/Users/Sanjay-PC/scoop/shims/allure.cmd` | Full path to allure CLI (not in Jenkins PATH) |
 
 ### Step 1 — Create the Jenkins job via CLI
 
