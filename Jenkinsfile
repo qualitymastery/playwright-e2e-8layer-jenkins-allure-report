@@ -13,7 +13,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main', url: 'https://github.com/qualitymastery/playwright-e2e-8layer-jenkins-allure-report.git'
             }
         }
 
